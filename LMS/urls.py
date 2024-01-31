@@ -17,8 +17,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from Home.views import Home
+from Home.views import createUser
 
 urlpatterns = [
     path('',Home),
+    path('api/v1/user',createUser),
     path('admin/', admin.site.urls),
 ]
