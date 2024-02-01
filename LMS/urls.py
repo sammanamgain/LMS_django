@@ -17,14 +17,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from Home.views import Home
-from Home.views import createUser,getAllUser,getUser,addBook,getAllBook
+from Home.views import createUser, getAllUser, getUser, addBook, getAllBook, getBookdetails, AddBookDetails
 
 urlpatterns = [
-    path('',Home),
-    path('api/v1/getuser/<int:user_id>',getUser),
-    path('api/v1/getalluser',getAllUser),
-    path('api/v1/user',createUser),
-    path('api/v1/addbook',addBook),
-    path('api/v1/allbook',getAllBook),
+    path('', Home),
+    path('api/v1/getuser/<int:user_id>', getUser),
+    path('api/v1/getalluser', getAllUser),
+    path('api/v1/user', createUser),
+    path('api/v1/addbook', addBook),
+    path('api/v1/allbook', getAllBook),
+    path('api/v1/book/<int:book_id>', getBookdetails),
+    path('api/v1/addbookdetails', AddBookDetails),
     path('admin/', admin.site.urls),
 ]

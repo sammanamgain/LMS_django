@@ -1,8 +1,8 @@
 from django.shortcuts import render
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
-from .models import User, Book
+from .models import User, Book, BookDetails
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import get_object_or_404
@@ -97,3 +97,48 @@ def getAllBook(request):
 
     except Exception as e:
         return JsonResponse({'message': e}, status=400)
+
+# fetch all book details
+
+
+def getBookdetails(request, book_id):
+    try:
+        if request.method != 'GET':
+            return JsonResponse({'message': 'Invalid call'}, status=400)
+
+        book = get_object_or_404(Book, pk=book_id)
+        Book_Details = get_object_or_404(BookDetails, book=book_id)
+        books = {'title': book.title, 'isbn': book.isbn,
+                 'published_date': book.published_date, 'genre': book.genre, 'details_id': Book_Details.details_id,  'number_of_pages': Book_Details.number_of_pages, 'publisher': Book_Details.publisher, 'language': Book_Details.language}
+
+        return JsonResponse({'Message': books, })
+    except Http404:
+        return JsonResponse({'message': 'Book not found'}, status=404)
+
+    except Exception as e:
+        return JsonResponse({'message': e}, status=400)
+
+
+@csrf_exempt
+def AddBookDetails(request):
+    try:
+        if request.method != 'POST':
+            return JsonResponse({'message': 'Invalid call'}, status=400)
+
+        data = json.loads(request.body.decode('utf-8'))
+        book_id = data.get('book_id')
+        if not book_id:
+            return JsonResponse({'message': 'Book ID is required'}, status=400)
+
+        book = get_object_or_404(Book, pk=book_id)
+
+        cleaned_data = {'details_id': data['details_id'], 'book': book,
+                        'number_of_pages': data['number_of_pages'], 'publisher': data['publisher'], 'language': data['language']}
+        book = BookDetails(**cleaned_data)
+        book.save()
+
+        return JsonResponse({'Message': 'Successfully added'})
+    except Http404:
+        return JsonResponse({'message': 'Book not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'message': str(e)}, status=400)
