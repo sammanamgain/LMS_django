@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from Home.views import Home
-from Home.views import createUser,getAllUser,getUser,addBook
+from Home.views import createUser,getAllUser,getUser,addBook,getAllBook
 
 urlpatterns = [
     path('',Home),
@@ -25,5 +25,6 @@ urlpatterns = [
     path('api/v1/getalluser',getAllUser),
     path('api/v1/user',createUser),
     path('api/v1/addbook',addBook),
+    path('api/v1/allbook',getAllBook),
     path('admin/', admin.site.urls),
 ]
