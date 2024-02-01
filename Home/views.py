@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
-from .models import User
+from .models import User,Book
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import get_object_or_404
@@ -63,3 +63,16 @@ def getUser(request,user_id):
 
     except Exception as e:
         return JsonResponse({'exception':e})
+   
+@csrf_exempt 
+def addBook(request):
+    try:
+      if request.method!='POST':
+          return JsonResponse({'message':'Invalid call'},status=404)
+      data=json.loads(request.body.decode('utf-8'))
+      cleaned_data={'title':data['title'],'isbn':data['isbn'],'published_date':data['published_date'],'genre':data['genre']}
+      book=Book(**cleaned_data)
+      book.save()
+      return JsonResponse({'Success':True,'message':'successfully created '})
+    except Exception as e:
+        return JsonResponse({'message':e},status=400)
