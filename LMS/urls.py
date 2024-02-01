@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from Home.views import Home
-from Home.views import createUser, getAllUser, getUser, addBook, getAllBook, getBookdetails, AddBookDetails
+from Home.views import createUser, getAllUser, getUser, addBook, getAllBook, getBookdetails, AddBookDetails, BorrowBook, getAllBorrow, deleteBorrowBook, signup, Login
 
 urlpatterns = [
     path('', Home),
@@ -28,5 +28,12 @@ urlpatterns = [
     path('api/v1/allbook', getAllBook),
     path('api/v1/book/<int:book_id>', getBookdetails),
     path('api/v1/addbookdetails', AddBookDetails),
+
+    path('api/v1/borrow', BorrowBook),
+
+    path('api/v1/removeborrow', deleteBorrowBook),
+    path('api/v1/getallborrow', getAllBorrow),
+    path('api/v1/signup', signup),
+    path('api/v1/logIn', Login),
     path('admin/', admin.site.urls),
 ]

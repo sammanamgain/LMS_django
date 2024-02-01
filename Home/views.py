@@ -1,11 +1,17 @@
+from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
+
+from django.contrib.auth.models import User as USER
 from django.shortcuts import render
 from django.http import Http404, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
-from .models import User, Book, BookDetails
+from .models import User, Book, BookDetails, BorrowedBooks
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import get_object_or_404
+from datetime import timedelta
+from django.core.serializers import serialize
 # Create your views here.
 
 
@@ -15,6 +21,7 @@ def Home(request):
 
 
 # create a user
+@login_required
 @csrf_exempt
 def createUser(request):
 
@@ -38,6 +45,7 @@ def createUser(request):
  # get all user
 
 
+@login_required
 def getAllUser(request):
     try:
         if request.method != 'GET':
@@ -52,7 +60,7 @@ def getAllUser(request):
 
 
 # get a single user
-
+@login_required
 def getUser(request, user_id):
     try:
         if request.method != 'GET':
@@ -69,6 +77,7 @@ def getUser(request, user_id):
         return JsonResponse({'exception': e})
 
 
+@login_required
 @csrf_exempt
 def addBook(request):
     try:
@@ -84,6 +93,7 @@ def addBook(request):
         return JsonResponse({'message': e}, status=400)
 
 
+@login_required
 def getAllBook(request):
     try:
         if request.method != 'GET':
@@ -101,6 +111,7 @@ def getAllBook(request):
 # fetch all book details
 
 
+@login_required
 def getBookdetails(request, book_id):
     try:
         if request.method != 'GET':
@@ -119,6 +130,7 @@ def getBookdetails(request, book_id):
         return JsonResponse({'message': e}, status=400)
 
 
+@login_required
 @csrf_exempt
 def AddBookDetails(request):
     try:
@@ -142,3 +154,128 @@ def AddBookDetails(request):
         return JsonResponse({'message': 'Book not found'}, status=404)
     except Exception as e:
         return JsonResponse({'message': str(e)}, status=400)
+
+
+@login_required
+@csrf_exempt
+def BorrowBook(request):
+    try:
+        if request.method != 'POST':
+            return JsonResponse({'message': 'Invalid call'}, status=400)
+
+        data = json.loads(request.body.decode('utf-8'))
+        book_id = data.get('book_id')
+        user_id = data.get('user_id')
+
+        if not book_id:
+            return JsonResponse({'message': 'Book ID is required'}, status=400)
+
+        book = get_object_or_404(Book, pk=book_id)
+        user = get_object_or_404(User, pk=user_id)
+        borrowed_date = timezone.now().date()
+        returned_date = borrowed_date+timedelta(days=30)
+
+        cleaned_data = {'book': book, 'user': user,
+                        'borrow_date': borrowed_date, 'return_date': returned_date}
+        book = BorrowedBooks(**cleaned_data)
+        book.save()
+
+        return JsonResponse({'Message': 'Successfully added'})
+    except Http404:
+        return JsonResponse({'message': 'Book not found or User not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'message': str(e)}, status=400)
+
+
+@login_required
+def getAllBorrow(request):
+    try:
+        if request.method != 'GET':
+            return JsonResponse({'message': 'Invalid call'}, status=400)
+
+        data = BorrowedBooks.objects.all()
+
+        # Serialize the queryset to JSON
+        serialized_data = serialize('json', data)
+
+        # Convert the serialized data to Python objects
+        parsed_data = json.loads(serialized_data)
+
+        # Extract relevant fields from the parsed data
+        alldata = [
+            {
+                'borrowed_books_id': borrow['pk'],
+                'user': borrow['fields']['user'],
+                'book': borrow['fields']['book'],
+                'borrow_date': borrow['fields']['borrow_date'],
+                'return_date': borrow['fields']['return_date'],
+            }
+            for borrow in parsed_data
+        ]
+
+        return JsonResponse({'Message': alldata})
+
+    except Exception as e:
+        return JsonResponse({'message': str(e)}, status=400)
+
+
+@login_required
+@csrf_exempt
+def deleteBorrowBook(request):
+    try:
+        if request.method != 'DELETE':
+            return JsonResponse({'message': 'Invalid call'}, status=400)
+
+        data = json.loads(request.body.decode('utf-8'))
+        book_id = data.get('book_id')
+        user_id = data.get('user_id')
+
+        borrowed_book = get_object_or_404(
+            BorrowedBooks, user=user_id, book=book_id)
+
+        # Delete the record
+        borrowed_book.delete()
+
+        return JsonResponse({'Message': 'Successfully Deleted'})
+    except Http404:
+        return JsonResponse({'message': 'Book not found or User not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'message': str(e)}, status=400)
+
+
+@login_required
+@csrf_exempt
+def signup(request):
+    print('signup')
+    try:
+        if (request.method != 'POST'):
+            return JsonResponse({'message': 'Invalid call'})
+        data = json.loads(request.body.decode('utf-8'))
+        username = data.get('username')
+        password = data.get('password')
+        user = USER.objects.create_user(username=username, password=password)
+        login(request, user)
+        return JsonResponse({'success': True, 'message': 'User created successfully'})
+    except Exception as e:
+        return JsonResponse({'message': 'failed', 'error': str(e)})
+
+
+@csrf_exempt
+@login_required
+def Login(request):
+
+    try:
+        if (request.method != 'POST'):
+            return JsonResponse({'message': 'Invalid call'})
+        data = json.loads(request.body.decode('utf-8'))
+        username = data.get('username')
+        password = data.get('password')
+        user = get_object_or_404(USER, username=username)
+        if not user.check_password(password):
+            return JsonResponse({'message': 'Invalid User||wrong  Password'})
+        if user is None:
+            return JsonResponse({'message': 'Invalid User||wrong  username and password'})
+        login(request, user)
+        return JsonResponse({'success': True, 'message': 'User Looged In successfully'})
+    except Exception as e:
+        return JsonResponse({'message': 'failed', 'error': str(e)})
